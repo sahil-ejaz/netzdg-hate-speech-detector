@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 import requests
 import json
@@ -588,7 +589,6 @@ Xenophobia Score:"""
 
 
 def extract_classification(raw):
-    import re
     lines = raw.split('\n')
     found = {}
     for line in lines:
@@ -715,9 +715,10 @@ def main():
         This application analyzes German text for potential hate speech content in compliance with the 
         **Network Enforcement Act (NetzDG)**. It uses a sophisticated rule based scoring system to detect:
         
-        **Xenophobia**: Language targeting ethnic, religious, or national groups
+        **Xenophobia**: Language targeting ethnic, religious or national groups
+
         **Misogyny**: Language targeting or devaluing women
-        
+
         The system evaluates text across multiple dimensions and provides actionable recommendations 
         aligned with NetzDG requirements and UN Sustainable Development Goals (SDGs).
         """)
@@ -906,7 +907,10 @@ def main():
                         if "API error" in llm_result:
                             st.warning(llm_result)
                         else:
-                            st.info(llm_result)
+                            # Format so Xenophobia, Misogyny, Explanation appear line by line
+                            formatted = re.sub(r'\s+Misogyny Score\s*:', r'\n\nMisogyny Score:', llm_result, flags=re.IGNORECASE)
+                            formatted = re.sub(r'\s+Explanation\s*:', r'\n\nExplanation:', formatted, flags=re.IGNORECASE)
+                            st.info(formatted)
         
         st.markdown("---")
         st.markdown("""
