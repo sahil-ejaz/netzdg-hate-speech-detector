@@ -122,6 +122,9 @@ def calculate_dimension_scores(text):
             generalization_score = max(generalization_score, 0.5)
         if 'genug davon' in processed_text:
             generalization_score = 1.0
+        # Check for plural verbs with groups (e.g., "Afrikaner sind" = generalization)
+        if check_exact_match(all_tokens, ['sind', 'waren', 'werden', 'wurden']) and group_score > 0:
+            generalization_score = max(generalization_score, 1.0)
     
     exclusion_score = 0
     if check_pattern_match(filtered_tokens, stemmed_tokens, EXCLUSION_DIRECT):
@@ -135,6 +138,9 @@ def calculate_dimension_scores(text):
     devaluation_score = 0
     if check_pattern_match(filtered_tokens, stemmed_tokens, DEVALUATION_STRONG):
         devaluation_score = 1.0
+        # If strong devaluation is combined with group reference, it's extremely severe
+        if group_score > 0:
+            devaluation_score = 1.0  # Keep at max, but this combination is very serious
     elif check_pattern_match(filtered_tokens, stemmed_tokens, DEVALUATION_MILD):
         devaluation_score = 0.5
     
@@ -394,6 +400,11 @@ def calculate_total_score(dimension_scores):
     total = max(0, total)
     if dimension_scores.get('death_wish', False):
         total = max(total, 5.0)
+    # Special case: Strong devaluation + group reference + generalization = very severe hate speech
+    if (dimension_scores['group_reference'] > 0 and 
+        dimension_scores['devaluation'] >= 1.0 and 
+        dimension_scores['generalization'] > 0):
+        total = max(total, 4.5)  # At least "NetzDG Relevant" level
     return total
 
 
